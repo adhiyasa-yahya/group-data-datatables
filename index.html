@@ -1,0 +1,127 @@
+<div class="table-responsive-disable">
+    <table id="example" class="display " cellspacing="0" width="100%">
+        <thead>
+            <tr>
+                <th scope="col" rowspan="1" style="width: fit-content;"></th>
+                <th rowspan="2">Tridama</th>
+                <th rowspan="2">Lembaga Mitra</th>
+                <th colspan="3" rowspan="1">Tingkat <sup>1)</sup></th>
+                <th rowspan="2">Judul Kegiatan Kerjasama <sup>2)</sup></th>
+                <th rowspan="2">Manfaat bagi PS yang Diakreditasi</th>
+                <th rowspan="2">Waktu Durasi</th>
+                <th rowspan="2">Bukti Kerjasama <sup>3)</sup></th>
+            </tr>
+            <tr>
+                <th scope="col"  style="width: fit-content;">#</th>
+                <th>Internasional</th>
+                <th>Nasional</th>
+                <th>Lokal/Wilayah</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($data as $list) 
+                <tr>
+                    <td></td>
+                    <td>{{ $list->tridharma }}</td>
+                    <td>{{ $list->lembaga_mitra }}</td>
+                    <td class="text-center">{{ ($list->tingkat == 'Internasional')?'v':'' }}</td>
+                    <td class="text-center">{{ ($list->tingkat == 'Nasional')?'v':'' }}</td>
+                    <td class="text-center">{{ ($list->tingkat == 'Local/Wilayah')?'v':'' }}</td>
+                    <td>{{ $list->judul_kegiatan }}</td>
+                    <td>{{ $list->manfaat }}</td>
+                    <td>{{ $list->waktu_durasi }}</td>
+                    <td>{{ $list->bukti_kerjasama }}</td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
+</div>
+
+<script>
+     $(document).ready(function() {
+        var groupColumn = 1;
+        var table = $('#example').DataTable( {
+            "bSort" : false, 
+            "orderCellsTop": true,
+            "bInfo" : true,
+            "bFilter": true,
+            "bPaginate": true,
+            "scrollX": true,
+            // // "scrollY":'380px',
+            fixedColumns: true,
+            "order": [[ 1, 'asc' ]],
+            paging: false,
+            orderCellsTop: false,
+            language : {
+                sLengthMenu: "Show _MENU_"
+            },
+            "fnRowCallback": function (nRow, aData, iDisplayIndex) {
+                var index = iDisplayIndex +1;
+                $('td:eq(0)',nRow).html(index);
+
+                return nRow;
+            },
+            dom: 'Bfrtip',
+            buttons: [
+                'csv', 'excel', 'pdf', 'print'
+            ],
+            "columnDefs": [
+                { "visible": false, "targets": groupColumn }
+            ],
+            "drawCallback": function ( settings ) {
+                var api = this.api();
+                var rows = api.rows( {page:'current'} ).nodes();
+                var last=null;
+
+                var subTotal = new Array();
+                var groupID = -1;
+                var aData = new Array();
+                var index = 0;
+    
+                api.column(groupColumn, {page:'current'} ).data().each( function ( group, i ) {
+                    if ( last !== group ) {
+                        $(rows).eq( i ).before(
+                            '<tr class="group"><td colspan="9">'+group+'</td></tr>'
+                        );
+                        
+                        last = group;
+                    }
+
+
+                    var vals = api.row(api.row($(rows).eq(i)).index()).data();
+                        var salary = vals[6] ? parseFloat(vals[6]) : 0;
+                        
+                        if (typeof aData[group] == 'undefined') {
+                            aData[group] = new Array();
+                            aData[group].rows = [];
+                            aData[group].salary = [];
+                        }
+
+                        aData[group].rows.push(i); 
+                        aData[group].salary.push(salary);  
+                });
+
+                var idx= 0;
+
+                for(var office in aData){
+
+                    idx =  Math.max.apply(Math,aData[office].rows);
+
+                    var sum = 0; 
+                    $.each(aData[office].salary,function(k,v){
+                            sum = sum + v;
+                    });
+                    console.log(aData[office].salary);
+                    $(rows).eq( idx ).after(
+                            '<tr class="group"><td class="text-bold" colspan="5"> &sum; </td>'+
+                            '<td class="bg-secondary">'+sum+'</td>'+
+                            '<td class="bg-secondary">'+sum+'</td>'+
+                            '<td class="bg-secondary">'+sum+'</td>'+
+                            '<td class="bg-secondary">'+sum+'</td></tr>',
+                        );
+                };
+            }
+        }); 
+    });
+
+</script>
